@@ -3,21 +3,7 @@
 
 # Will have to specify own MCR as run_groupica uses 9.0.1 not 9.1
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
-FROM python:3.6-alpine
-
-RUN echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-RUN apk --update add --no-cache \ 
-    lapack-dev \ 
-    gcc \
-    freetype-dev
-
-RUN apk add python3-dev 
-
-# Install dependencies
-RUN apk add --no-cache --virtual .build-deps \
-    gfortran \
-    musl-dev \
-    g++
+FROM kuralabs/python3-dev
 
 # FROM python:3.6
 
