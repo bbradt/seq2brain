@@ -19,6 +19,10 @@ Todo:
 """
 import os
 import nipype.interfaces.gift as gift
+import nibabel as nib
+from nibabel.processing import resample_from_to
+from nibabel.funcs import four_to_three
+
 # from django.conf import settings
 
 # CONSTANTS
@@ -36,7 +40,7 @@ ICA_ALGORITHMS = ['InfoMax', 'Fast ICA', 'Erica', 'Simbec', 'Evd', 'Jade Opac',
 
 # SHARED DEFAULTS
 #matlab_cmd = os.getenv('MATLAB_COMMAND')
-matlab_cmd = './groupicatv4.0b/GroupICATv4.0b_standalone/run_groupica.sh /usr/local/MATLAB/MATLAB_Runtime/v901/'
+matlab_cmd = '/app/groupicatv4.0b/GroupICATv4.0b_standalone/run_groupica.sh /usr/local/MATLAB/MATLAB_Runtime/v901/'
 #DEFAULT_OUT_DIR = os.path.join(str(settings.ROOT_DIR), 'media', 'figures')
 DEFAULT_OUT_DIR = '/out'
 DEFAULT_DISPLAY_RESULTS = 1
@@ -136,14 +140,14 @@ def gift_gica(
     gc = gift.GICACommand()
     gc.inputs.in_files = in_files
     gc.inputs.algoType = algoType
-    gc.inputs.group_pca_type = group_pca_type
+    gc.inputs.group_pca_type = PCA_TYPES[group_pca_type]
     gc.inputs.backReconType = backReconType
     gc.inputs.preproc_type = preproc_type
     gc.inputs.numReductionSteps = numReductionSteps
     gc.inputs.scaleType = scaleType
     gc.inputs.group_ica_type = group_ica_type
     gc.inputs.which_analysis = which_analysis
-    gc.inputs.refFiles = refFiles
+    gc.inputs.refFiles = get_interpolated_nifti(in_files[0], refFiles)
     gc.inputs.display_results = display_results
 
     if dim > 0:
@@ -284,9 +288,48 @@ def gift_mancova(
 
     return gc.run()
 
+def get_interpolated_nifti(template_filename, input_filename, destination_dir=None):
+    '''
+        Get an interpolated version of an file which is interpolated to match a reference.
+        First, check if interpolated dimensions of nifti files match, if so, just return the input_filename.
+        Else, if an interpolated version of the file has been created and saved in the root directory before, return its filename,
+            else, create the interpolated version, and return its filename.
+        Args:
+            template_filename - the filename which has the desired spatial dimension
+            input_filename - the filename to be interpolated
+        Template for interpolated filenames example:
+            input_filename = ' example.nii ' has dimension 53 x 63 x 52
+            template_filename = 'template.nii' has dimension 53 x 63 x 46
+            output_filename = 'example_INTERP_53_63_46.nii' has dimension 53 x 63 x 46
+    '''
+
+    base_dir = os.path.dirname(input_filename)
+    input_prefix, input_ext = os.path.splitext(input_filename)
+    template_img = nib.load(template_filename)
+    input_img = nib.load(input_filename)
+    template_img = template_img.slicer[:, :, :, :input_img.shape[3]]
+    template_dim = template_img.shape
+
+    if input_img.shape == template_dim:
+        return input_filename
+
+    output_filename = os.path.join(
+        base_dir, "%s_INTERP_%d_%d_%d.nii" % (input_prefix, template_img.shape[0], template_img.shape[1], template_img.shape[2]))
+
+    if os.path.exists(output_filename):
+        return output_filename
+
+    output_img = resample_from_to(input_img, template_img)
+    if destination_dir is not None:
+        output_filename = os.path.join(destination_dir, os.path.basename(output_filename))
+    nib.save(output_img, output_filename)
+
+    return output_filename
 
 if __name__ == '__main__':
     algorithm = sys.argv[1]
     json_args = json.loads(sys.argv[2])
     if algorithm == 'gica':
         gift_gica(**json_args)
+    elif algorithm == 'dfnc':
+        gift_dfnc(**json_args)

@@ -1,0 +1,1 @@
+docker container run -v /home/bbradt/projects/seq2brain/data/fbirn:/data/fbirn -v /home/bbradt/projects/seq2brain/data/results:/out giftdocker python /app/run_gift.py gica '{"in_files":["/data/fbirn/vsdwa_000360276455_0002.nii"]}'
