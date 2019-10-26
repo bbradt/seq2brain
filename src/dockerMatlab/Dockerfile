@@ -5,9 +5,21 @@
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
 FROM python:3.6-alpine
 
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev unzip wget make automake g++ subversion python3-dev
-RUN pip install cython
-RUN apk del .build-deps gcc musl-dev
+RUN echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
+RUN apk --update add --no-cache \ 
+    lapack-dev \ 
+    gcc \
+    freetype-dev
+
+RUN apk add py-pip python-dev 
+
+# Install dependencies
+RUN apk add --no-cache --virtual .build-deps \
+    gfortran \
+    musl-dev \
+    g++
+
+RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
 
 # FROM python:3.6
 
