@@ -6,7 +6,8 @@
     "nifti-reader-js": "^0.5.4",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
-    "react-scripts": "3.2.0"
+    "react-scripts": "3.2.0",
+    "stl-viewer": "^0.12.0"
   },
   "scripts": {
     "start": "react-scripts start",
