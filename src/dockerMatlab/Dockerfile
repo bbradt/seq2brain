@@ -30,7 +30,7 @@ WORKDIR /app
 COPY . /app
 
 
-COPY ./groupicatv4.0b/icatb/nipype-0.10.0/nipype/interfaces/gift /opt/conda/lib/python3.7/site-packages/nipype/interfaces/
+COPY ./groupicatv4.0b/icatb/nipype-0.10.0/nipype/interfaces/gift /opt/conda/lib/python3.7/site-packages/nipype/interfaces/gift
 
 # Run groupica script
 # ./run_groupica.sh /mathworks/home/application/v901
