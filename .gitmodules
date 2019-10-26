@@ -1,9 +1,6 @@
 [submodule "seq2seq"]
 	path = seq2seq
 	url = https://github.com/farizrahman4u/seq2seq.git
-[submodule "Video2Description"]
-	path = Video2Description
-	url = https://github.com/scopeInfinity/Video2Description.git
 [submodule "ABiViRNet"]
 	path = ABiViRNet
 	url = https://github.com/lvapeab/ABiViRNet.git
