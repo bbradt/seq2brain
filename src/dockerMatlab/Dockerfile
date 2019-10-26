@@ -5,7 +5,7 @@
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
 FROM python:3.6-alpine
 
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev unzip wget
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev unzip wget make automake g++ subversion python3-dev
 RUN pip install cython
 RUN apk del .build-deps gcc musl-dev
 
