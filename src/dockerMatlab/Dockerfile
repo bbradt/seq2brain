@@ -3,9 +3,7 @@
 
 # Will have to specify own MCR as run_groupica uses 9.0.1 not 9.1
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
-FROM frolvlad/alpine-python-machinelearning
-
-RUN apk add --update --no-cache g++ gcc libxslt-dev python3-dev
+FROM tiangolo/python-machine-learning
 
 # FROM python:3.6
 
@@ -21,12 +19,15 @@ RUN mkdir /tmp/mcr_installer && \
 ENV MCRROOT=/usr/local/MATLAB/MATLAB_Runtime/v901 MCR_CACHE_ROOT=/tmp
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/MATLAB/MATLAB_Runtime/v901/runtime/glnxa64:/usr/local/MATLAB/MATLAB_Runtime/v901/bin/glnxa64:/usr/local/MATLAB/MATLAB_Runtime/v901/sys/os/glnxa64:/usr/local/MATLAB/MATLAB_Runtime/v901/sys/opengl/lib/glnxa64:/usr/local/MATLAB/MATLAB_Runtime/v901/sys/java/jre/glnxa64/jre/lib/amd64/native_threads:/usr/local/MATLAB/MATLAB_Runtime/v901/sys/java/jre/glnxa64/jre/lib/amd64/server:/usr/local/MATLAB/MATLAB_Runtime/v901/sys/java/jre/glnxa64/jre/lib/amd64
 
+WORKDIR /usr/bin
+
+RUN wget http://www.patrickmin.com/binvox/linux64/binvox 
+
 # Set the working directory
 WORKDIR /app
 
 # copy current directory to container
 COPY . /app
-
 
 
 COPY ./groupicatv4.0b/icatb/nipype-0.10.0/nipype/interfaces/gift /usr/local/lib/python3.6/site-packages/nipype/interfaces/
