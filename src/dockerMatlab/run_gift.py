@@ -1,5 +1,25 @@
+import json
+import sys
+"""run_gift.py
+
+This module contains default parameters and functions for running
+gift via NiPype.
+
+Functions:
+    gift_gica - run group independent component analysis
+    gift_dfnc - run dynamic functional network connectivity
+    gift_mancova - run mancova
+
+Todo:
+    * Finishg Adding Mancova parameters
+    * Merge any more shared parameters
+    * Mancova docstring
+    * Tests
+
+"""
 import os
 import nipype.interfaces.gift as gift
+# from django.conf import settings
 
 # CONSTANTS
 ICA_TYPES = ['spatial', 'temporal']
@@ -15,25 +35,27 @@ ICA_ALGORITHMS = ['InfoMax', 'Fast ICA', 'Erica', 'Simbec', 'Evd', 'Jade Opac',
                   'Combi', 'ICA-EBM', 'ERBM', 'IVA-GL', 'GIG-ICA', 'IVA-L']
 
 # SHARED DEFAULTS
-matlab_cmd = 
-DEFAULT_OUT_DIR = os.path.join('results')
+#matlab_cmd = os.getenv('MATLAB_COMMAND')
+matlab_cmd = './groupicatv4.0b/GroupICATv4.0b_standalone/run_groupica.sh /usr/local/MATLAB/MATLAB_Runtime/v901/'
+#DEFAULT_OUT_DIR = os.path.join(str(settings.ROOT_DIR), 'media', 'figures')
+DEFAULT_OUT_DIR = '/out'
 DEFAULT_DISPLAY_RESULTS = 1
 DEFAULT_NUM_COMPS = 100
 DEFAULT_COMP_NETWORK_NAMES = {}
 DEFAULT_TR = 2
 
 # GICA DEFAULTS
-DEFAULT_DIM = 53
-DEFAULT_ALG = 16
+DEFAULT_DIM = 100
+DEFAULT_ALG = 1
 DEFAULT_ICA_PARAM_FILE = ''
-DEFAULT_REFS = os.path.join('data',
-                            'NeuroMarkICNs.nii')
+DEFAULT_REFS = os.path.join('/app', 'template',
+                            'NeuroMark.nii')
 DEFAULT_RUN_NAME = 'test'
 DEFAULT_GROUP_PCA_TYPE = 0
-DEFAULT_BACK_RECON_TYPE = 5
+DEFAULT_BACK_RECON_TYPE = 1
 DEFAULT_PREPROC_TYPE = 1
 DEFAULT_NUM_REDUCTION_STEPS = 1
-DEFAULT_SCALE_TYPE = 2
+DEFAULT_SCALE_TYPE = 1
 DEFAULT_GROUP_ICA_TYPE = 'spatial'
 DEFAULT_WHICH_ANALYSIS = 1
 DEFAULT_MASK = ''
@@ -57,8 +79,15 @@ DEFAULT_REGRESS_COV_FILE = ''
 DEFAULT_KMEANS_MAX_ITER = 150
 DEFAULT_DMETHOD = 'city'
 
+# ManCova
+DEFAULT_FEATURES = []
+DEFAULT_COVARIATES = {}
+DEFAULT_INTERACTIONS = []
+DEFAULT_FEATURE_PARAMS = {}
+
+
 def gift_gica(
-    in_files, dim=DEFAULT_DIM, algoType=DEFAULT_ALG, refFiles=DEFAULT_REFS,
+    in_files=[], dim=DEFAULT_DIM, algoType=DEFAULT_ALG, refFiles=DEFAULT_REFS,
     run_name=DEFAULT_RUN_NAME, out_dir=DEFAULT_OUT_DIR, group_pca_type=DEFAULT_GROUP_PCA_TYPE,
     backReconType=DEFAULT_BACK_RECON_TYPE, preproc_type=DEFAULT_PREPROC_TYPE,
     numReductionSteps=DEFAULT_NUM_REDUCTION_STEPS, scaleType=DEFAULT_SCALE_TYPE,
@@ -102,7 +131,7 @@ def gift_gica(
 
 
     """
-    gift.GICACommand.set_mlab_paths(matlab_cmd=matlab_cmd)
+    gift.GICACommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
     gc = gift.GICACommand()
     gc.inputs.in_files = in_files
@@ -123,6 +152,17 @@ def gift_gica(
     gc.inputs.out_dir = out_dir
 
     return gc.run()
+
+
+def resolve_comp_network_names(num_comps, network_names):
+    '''
+        Resolve the DEFAULT network names, so that the number of components in that dict does
+        not exceed the desired num_comps. This is required for dFNC input.
+
+        Currently just use the network numbers.
+    '''
+    return {'%d' % v: v+1 for v in range(num_comps)}
+
 
 def gift_dfnc(
     ica_param_file=DEFAULT_ICA_PARAM_FILE,
@@ -187,7 +227,8 @@ def gift_dfnc(
     gc = gift.DFNCCommand()
     gc.inputs.ica_param_file = ica_param_file
     gc.inputs.out_dir = out_dir
-    gc.inputs.comp_network_names = resolve_comp_network_names(ica_num_comps, comp_network_names)
+    gc.inputs.comp_network_names = resolve_comp_network_names(
+        ica_num_comps, comp_network_names)
     gc.inputs.TR = TR
     dfnc_params = dict(
         tc_detrend=tc_detrend,
@@ -214,3 +255,38 @@ def gift_dfnc(
     gc.inputs.postprocess = postprocess
 
     return gc.run()
+
+
+def gift_mancova(
+    ica_param_file=DEFAULT_ICA_PARAM_FILE,
+    out_dir=DEFAULT_OUT_DIR,
+    run_name=DEFAULT_RUN_NAME,
+    comp_network_names=DEFAULT_COMP_NETWORK_NAMES,
+    TR=DEFAULT_TR,
+    features=DEFAULT_FEATURES,
+    covariates=DEFAULT_COVARIATES,
+    interactions=DEFAULT_INTERACTIONS,
+    numOfPCs=DEFAULT_NUM_COMPS,
+    feature_params=DEFAULT_FEATURE_PARAMS,
+):
+    gift.MancovanCommand.set_mlab_paths(matlab_cmd=matlab_cmd)
+
+    gc = gift.MancovanCommand()
+    gc.inputs.ica_param_file = ica_param_file
+    gc.inputs.out_dir = out_dir
+    gc.inputs.comp_network_names = comp_network_names
+    gc.inputs.TR = TR
+    gc.inputs.features = features
+    gc.inputs.covariates = covariates
+    gc.inputs.interactions = interactions
+    gc.inputs.numOfPCs = numOfPCs
+    gc.inputs.feature_params = feature_params
+
+    return gc.run()
+
+
+if __name__ == '__main__':
+    algorithm = sys.argv[1]
+    json_args = json.loads(sys.argv[2])
+    if algorithm == 'gica':
+        gift_gica(**json_args)
