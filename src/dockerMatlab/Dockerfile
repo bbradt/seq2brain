@@ -5,7 +5,7 @@
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
 FROM alectolytic/scipy
 
-RUN apk add --update --no-cache g++ gcc libxslt-dev
+RUN apk add --update --no-cache g++ gcc libxslt-dev python3-dev
 
 # FROM python:3.6
 
