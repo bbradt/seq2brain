@@ -3,13 +3,16 @@
 
 # Will have to specify own MCR as run_groupica uses 9.0.1 not 9.1
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
-FROM anidata/python-dev
+FROM python:3.6-alpine
+
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev unzip wget
+RUN pip install cython
+RUN apk del .build-deps gcc musl-dev
+
+# FROM python:3.6
 
 ADD requirements.txt /
 RUN pip install -r requirements.txt
-
-RUN apt-get update -y 
-RUN apt-get install -y unzip
 
 RUN mkdir /tmp/mcr_installer && \
     cd /tmp/mcr_installer && \
@@ -25,6 +28,8 @@ WORKDIR /app
 
 # copy current directory to container
 COPY . /app
+
+
 
 COPY ./groupicatv4.0b/icatb/nipype-0.10.0/nipype/interfaces/gift /usr/local/lib/python3.6/site-packages/nipype/interfaces/
 
