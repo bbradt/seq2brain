@@ -5,6 +5,12 @@
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
 FROM anidata/python-dev
 
+ADD requirements.txt /
+RUN pip install -r requirements.txt
+
+RUN apt-get update -y 
+RUN apt-get install -y unzip
+
 RUN mkdir /tmp/mcr_installer && \
     cd /tmp/mcr_installer && \
     wget http://ssd.mathworks.com/supportfiles/downloads/R2016a/deployment_files/R2016a/installers/glnxa64/MCR_R2016a_glnxa64_installer.zip && \
@@ -19,12 +25,6 @@ WORKDIR /app
 
 # copy current directory to container
 COPY . /app
-
-# FROM python:3.6
-
-ADD requirements.txt /
-RUN pip install -r requirements.txt
-
 
 COPY ./groupicatv4.0b/icatb/nipype-0.10.0/nipype/interfaces/gift /usr/local/lib/python3.6/site-packages/nipype/interfaces/
 
