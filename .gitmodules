@@ -4,3 +4,6 @@
 [submodule "Video2Description"]
 	path = Video2Description
 	url = https://github.com/scopeInfinity/Video2Description.git
+[submodule "ABiViRNet"]
+	path = ABiViRNet
+	url = https://github.com/lvapeab/ABiViRNet.git
