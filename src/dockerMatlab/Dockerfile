@@ -5,8 +5,6 @@
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
 FROM frolvlad/alpine-python-machinelearning
 
-RUN apk add --update --no-cache g++ gcc libxslt-dev python3-dev
-
 # FROM python:3.6
 
 ADD requirements.txt /
