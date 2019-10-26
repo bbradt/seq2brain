@@ -5,6 +5,12 @@
 # Following is copied from docker-matlab-runtime, with R2016b replaced by R2016a
 FROM alectolytic/scipy
 
+RUN apk add --no-cache --virtual .build-deps gcc libc-dev libxslt-dev && \
+    apk add --no-cache libxslt && \
+    pip install --no-cache-dir lxml>=3.5.0 && \
+    apk del .build-deps
+
+
 # FROM python:3.6
 
 ADD requirements.txt /
