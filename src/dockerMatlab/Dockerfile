@@ -11,15 +11,13 @@ RUN apk --update add --no-cache \
     gcc \
     freetype-dev
 
-RUN apk add py-pip python-dev 
+RUN apk add python3-dev 
 
 # Install dependencies
 RUN apk add --no-cache --virtual .build-deps \
     gfortran \
     musl-dev \
     g++
-
-RUN ln -s /usr/include/locale.h /usr/include/xlocale.h
 
 # FROM python:3.6
 
