@@ -7,3 +7,6 @@
 [submodule "ABiViRNet"]
 	path = ABiViRNet
 	url = https://github.com/lvapeab/ABiViRNet.git
+[submodule "FFmpeg"]
+	path = FFmpeg
+	url = https://github.com/FFmpeg/FFmpeg.git
