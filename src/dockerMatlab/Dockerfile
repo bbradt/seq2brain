@@ -26,11 +26,12 @@ RUN wget http://www.patrickmin.com/binvox/linux64/binvox
 # Set the working directory
 WORKDIR /app
 
-# copy current directory to container
-COPY . /app
-
+RUN pip install awscli s3utils
 
 COPY ./groupicatv4.0b/icatb/nipype-0.10.0/nipype/interfaces/gift /opt/conda/lib/python3.7/site-packages/nipype/interfaces/gift
+
+# copy current directory to container
+COPY . /app
 
 # Run groupica script
 # ./run_groupica.sh /mathworks/home/application/v901

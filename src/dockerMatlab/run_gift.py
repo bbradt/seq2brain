@@ -18,10 +18,12 @@ Todo:
 
 """
 import os
+import utils as ut
 import nipype.interfaces.gift as gift
 import nibabel as nib
 from nibabel.processing import resample_from_to
 from nibabel.funcs import four_to_three
+import argparse
 
 # from django.conf import settings
 
@@ -43,18 +45,18 @@ ICA_ALGORITHMS = ['InfoMax', 'Fast ICA', 'Erica', 'Simbec', 'Evd', 'Jade Opac',
 matlab_cmd = '/app/groupicatv4.0b/GroupICATv4.0b_standalone/run_groupica.sh /usr/local/MATLAB/MATLAB_Runtime/v901/'
 #DEFAULT_OUT_DIR = os.path.join(str(settings.ROOT_DIR), 'media', 'figures')
 DEFAULT_OUT_DIR = '/out'
-DEFAULT_DISPLAY_RESULTS = 1
-DEFAULT_NUM_COMPS = 100
+DEFAULT_DISPLAY_RESULTS = 0
+DEFAULT_NUM_COMPS = 53
 DEFAULT_COMP_NETWORK_NAMES = {}
 DEFAULT_TR = 2
 
 # GICA DEFAULTS
-DEFAULT_DIM = 100
+DEFAULT_DIM = 53
 DEFAULT_ALG = 1
 DEFAULT_ICA_PARAM_FILE = ''
 DEFAULT_REFS = os.path.join('/app', 'template',
                             'NeuroMark.nii')
-DEFAULT_RUN_NAME = 'test'
+DEFAULT_RUN_NAME = 'dfnc'
 DEFAULT_GROUP_PCA_TYPE = 0
 DEFAULT_BACK_RECON_TYPE = 1
 DEFAULT_PREPROC_TYPE = 1
@@ -96,7 +98,7 @@ def gift_gica(
     backReconType=DEFAULT_BACK_RECON_TYPE, preproc_type=DEFAULT_PREPROC_TYPE,
     numReductionSteps=DEFAULT_NUM_REDUCTION_STEPS, scaleType=DEFAULT_SCALE_TYPE,
     group_ica_type=DEFAULT_GROUP_ICA_TYPE, display_results=DEFAULT_DISPLAY_RESULTS,
-    which_analysis=DEFAULT_WHICH_ANALYSIS, mask=DEFAULT_MASK
+    which_analysis=DEFAULT_WHICH_ANALYSIS, mask=DEFAULT_MASK, **kwargs
 ):
     """
     Wrapper for initializing GIFT nipype interface to run Group ICA.
@@ -135,6 +137,9 @@ def gift_gica(
 
 
     """
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
     gift.GICACommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
     gc = gift.GICACommand()
@@ -191,6 +196,7 @@ def gift_dfnc(
     kmeans_max_iter=DEFAULT_KMEANS_MAX_ITER,
     dmethod=DEFAULT_DMETHOD,
     display_results=DEFAULT_DISPLAY_RESULTS,
+    **kwargs
 ):
     '''
     Wrapper for initializing GIFT nipype interface to run dynamic FNC.
@@ -226,7 +232,7 @@ def gift_dfnc(
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    gift.DFNCCommand.set_mlab_paths(matlab_cmd=matlab_cmd)
+    gift.DFNCCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
     gc = gift.DFNCCommand()
     gc.inputs.ica_param_file = ica_param_file
@@ -261,32 +267,16 @@ def gift_dfnc(
     return gc.run()
 
 
-def gift_mancova(
-    ica_param_file=DEFAULT_ICA_PARAM_FILE,
-    out_dir=DEFAULT_OUT_DIR,
-    run_name=DEFAULT_RUN_NAME,
-    comp_network_names=DEFAULT_COMP_NETWORK_NAMES,
-    TR=DEFAULT_TR,
-    features=DEFAULT_FEATURES,
-    covariates=DEFAULT_COVARIATES,
-    interactions=DEFAULT_INTERACTIONS,
-    numOfPCs=DEFAULT_NUM_COMPS,
-    feature_params=DEFAULT_FEATURE_PARAMS,
-):
-    gift.MancovanCommand.set_mlab_paths(matlab_cmd=matlab_cmd)
-
-    gc = gift.MancovanCommand()
-    gc.inputs.ica_param_file = ica_param_file
-    gc.inputs.out_dir = out_dir
-    gc.inputs.comp_network_names = comp_network_names
-    gc.inputs.TR = TR
-    gc.inputs.features = features
-    gc.inputs.covariates = covariates
-    gc.inputs.interactions = interactions
-    gc.inputs.numOfPCs = numOfPCs
-    gc.inputs.feature_params = feature_params
-
-    return gc.run()
+def gift_patch(**kwargs):
+    gica_result = gift_gica(**kwargs)
+    out_dir = gica_result.inputs['out_dir']
+    nc = gica_result.inputs['dim']
+    alg = ICA_ALGORITHMS[gica_result.inputs['algoType']]
+    param_file = os.path.join(out_dir, 'gica_cmd_ica_parameter_info.mat')
+    kwargs["ica_param_file"] = param_file
+    kwargs["ica_algorithm"] = alg
+    kwargs["out_dir"] = out_dir
+    dfnc_result = gift_dfnc(**kwargs)
 
 def get_interpolated_nifti(template_filename, input_filename, destination_dir=None):
     '''
@@ -327,9 +317,31 @@ def get_interpolated_nifti(template_filename, input_filename, destination_dir=No
     return output_filename
 
 if __name__ == '__main__':
-    algorithm = sys.argv[1]
-    json_args = json.loads(sys.argv[2])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--algorithm', help='old foo help')
+    parser.add_argument('-b', '--inbucket', help='old foo help')
+    parser.add_argument('-d', '--outbucket', help='old foo help')
+    parser.add_argument('-i', '--infiles', help='old foo help')
+    parser.add_argument('-o', '--outfile', help='outfile')
+    args = parser.parse_args()
+    algorithm = args.algorithm
+    json_args = {'in_files': args.infiles, 'in-aws':args.inbucket, 'out-aws':args.outbucket, 'out_dir':args.outfile}
+    json_args['in_files'] = json_args['in_files'].split(',')
+    print("ARGS %s" % json_args)
+    if "in-aws" in json_args.keys() and "in_files" in json_args.keys():
+        new_files = []
+        for in_file in json_args['in_files']:
+            new_fn = os.path.join('/data', in_file)
+            ut.aws2local(json_args['in-aws'], in_file, new_fn)
+            assert(os.path.exists(new_fn))
+            new_files.append(new_fn)
+        json_args['in_files'] = new_files
+    print("ARGS %s" % json_args)
     if algorithm == 'gica':
         gift_gica(**json_args)
     elif algorithm == 'dfnc':
         gift_dfnc(**json_args)
+    else:
+        gift_patch(**json_args)
+    if "out-aws" in json_args.keys() and 'out_dir' in json_args.keys():
+        ut.local2aws(json_args['out_dir'],json_args["out-aws"],json_args["out_dir"])
